@@ -11,19 +11,109 @@ import scala.annotation.tailrec
  */
 object JsonInterpolatorRuntime {
   def jsonWithInterpolation(sc: StringContext, args: Seq[Any]): Json = {
-    val parts  = sc.parts.iterator
-    val argsIt = args.iterator
-    val str    = parts.next()
-    val out    = new ByteArrayOutputStream(str.length << 1)
-    out.write(str)
-    while (argsIt.hasNext) {
-      writeValue(out, argsIt.next())
-      out.write(parts.next())
+    val parts      = sc.parts.toIndexedSeq
+    val out        = new ByteArrayOutputStream(parts.map(_.length).sum << 1)
+    var quoteCount = 0
+
+    // Write first part
+    val firstPart = parts(0)
+    out.write(firstPart)
+    quoteCount += countUnescapedQuotes(firstPart)
+
+    // Process each argument with its surrounding parts
+    var idx = 0
+    while (idx < args.length) {
+      val arg   = args(idx)
+      val after = parts(idx + 1)
+
+      // If quoteCount is odd, we are inside a string literal
+      val insideString = quoteCount % 2 == 1
+
+      if (insideString) {
+        // Inside a string literal - write as plain string
+        writeStringValue(out, arg)
+      } else {
+        // Outside string literal - check if it's a key or value
+        val beforeTrimmed = parts(idx).trim
+        val afterTrimmed  = after.trim
+        val isKey         = (beforeTrimmed.endsWith("{") || beforeTrimmed.endsWith(",")) && afterTrimmed.startsWith(":")
+
+        if (isKey) writeKey(out, arg)
+        else writeValue(out, arg)
+      }
+
+      // Write the next part
+      out.write(after)
+      quoteCount += countUnescapedQuotes(after)
+      idx += 1
     }
+
     Json.jsonCodec.decode(out.toByteArray) match {
       case Right(json) => json
       case Left(error) => throw error
     }
+  }
+
+  /**
+   * Counts unescaped double quotes in a string.
+   */
+  private[this] def countUnescapedQuotes(s: String): Int = {
+    var count = 0
+    var i     = 0
+    while (i < s.length) {
+      if (s.charAt(i) == '"') {
+        // Count preceding backslashes
+        var backslashCount = 0
+        var j              = i - 1
+        while (j >= 0 && s.charAt(j) == '\\') {
+          backslashCount += 1
+          j -= 1
+        }
+        // If even number of backslashes (including 0), the quote is not escaped
+        if (backslashCount % 2 == 0) {
+          count += 1
+        }
+      }
+      i += 1
+    }
+    count
+  }
+
+  /**
+   * Writes a value as a plain string (for interpolation inside JSON string
+   * literals). Uses Stringable typeclass to convert the value to string.
+   */
+  private[this] def writeStringValue(out: ByteArrayOutputStream, value: Any): Unit = value match {
+    case s: String           => out.write(s.getBytes("UTF-8"))
+    case b: Boolean          => out.write(b.toString.getBytes("UTF-8"))
+    case b: Byte             => out.write(b.toString.getBytes("UTF-8"))
+    case sh: Short           => out.write(sh.toString.getBytes("UTF-8"))
+    case i: Int              => out.write(i.toString.getBytes("UTF-8"))
+    case l: Long             => out.write(l.toString.getBytes("UTF-8"))
+    case f: Float            => out.write(f.toString.getBytes("UTF-8"))
+    case d: Double           => out.write(d.toString.getBytes("UTF-8"))
+    case c: Char             => out.write(c.toString.getBytes("UTF-8"))
+    case bd: BigDecimal      => out.write(bd.toString.getBytes("UTF-8"))
+    case bi: BigInt          => out.write(bi.toString.getBytes("UTF-8"))
+    case dow: DayOfWeek      => out.write(dow.toString.getBytes("UTF-8"))
+    case d: Duration         => out.write(d.toString.getBytes("UTF-8"))
+    case i: Instant          => out.write(i.toString.getBytes("UTF-8"))
+    case ld: LocalDate       => out.write(ld.toString.getBytes("UTF-8"))
+    case ldt: LocalDateTime  => out.write(ldt.toString.getBytes("UTF-8"))
+    case lt: LocalTime       => out.write(lt.toString.getBytes("UTF-8"))
+    case m: Month            => out.write(m.toString.getBytes("UTF-8"))
+    case md: MonthDay        => out.write(md.toString.getBytes("UTF-8"))
+    case odt: OffsetDateTime => out.write(odt.toString.getBytes("UTF-8"))
+    case ot: OffsetTime      => out.write(ot.toString.getBytes("UTF-8"))
+    case p: Period           => out.write(p.toString.getBytes("UTF-8"))
+    case y: Year             => out.write(y.toString.getBytes("UTF-8"))
+    case ym: YearMonth       => out.write(ym.toString.getBytes("UTF-8"))
+    case zo: ZoneOffset      => out.write(zo.toString.getBytes("UTF-8"))
+    case zi: ZoneId          => out.write(zi.toString.getBytes("UTF-8"))
+    case zdt: ZonedDateTime  => out.write(zdt.toString.getBytes("UTF-8"))
+    case c: Currency         => out.write(c.getCurrencyCode.getBytes("UTF-8"))
+    case uuid: UUID          => out.write(uuid.toString.getBytes("UTF-8"))
+    case x                   => out.write(x.toString.getBytes("UTF-8"))
   }
 
   private[this] def writeValue(out: ByteArrayOutputStream, value: Any): Unit = value match {
@@ -82,6 +172,7 @@ object JsonInterpolatorRuntime {
           if (comma) out.write(',')
           else comma = true
           writeKey(out, kv._1)
+          out.write(':')
           writeValue(out, kv._2)
       }
       out.write('}')
@@ -108,7 +199,7 @@ object JsonInterpolatorRuntime {
     case x => out.write(x.toString)
   }
 
-  private[this] def writeKey(out: ByteArrayOutputStream, key: Any): Unit = {
+  private[this] def writeKey(out: ByteArrayOutputStream, key: Any): Unit =
     key match {
       case s: String  => JsonBinaryCodec.stringCodec.encode(s, out)
       case b: Boolean =>
@@ -167,8 +258,6 @@ object JsonInterpolatorRuntime {
       case uuid: UUID          => JsonBinaryCodec.uuidCodec.encode(uuid, out)
       case x                   => JsonBinaryCodec.stringCodec.encode(x.toString, out)
     }
-    out.write(':')
-  }
 }
 
 private class ByteArrayOutputStream(initCapacity: Int) extends OutputStream {
