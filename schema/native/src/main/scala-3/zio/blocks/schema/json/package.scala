@@ -29,7 +29,7 @@ package object json {
     args match {
       case Varargs(argExprs) =>
         argExprs.zipWithIndex.foreach { case (argExpr, idx) =>
-          val argType = argExpr.asTerm.tpe
+          val argType = argExpr.asTerm.tpe.widen
           val before  = if (idx < parts.length) parts(idx) else ""
           val after   = if (idx + 1 < parts.length) parts(idx + 1) else ""
 
@@ -38,40 +38,49 @@ package object json {
           context match {
             case InterpolationContext.StringLiteral =>
               // Inside a string literal - require Stringable
-              Expr.summon(using argType.asType.asInstanceOf[Type[Any]]) match {
-                case Some(_: Expr[Stringable[?]]) => // OK
-                case None                         =>
-                  report.errorAndAbort(
-                    s"Cannot interpolate type ${argType.show} in string literal. " +
-                      s"Only stringable types (primitives, BigInt, BigDecimal, java.time types, UUID, Currency) are allowed. " +
-                      s"Provide an implicit Stringable[${argType.show}] instance.",
-                    argExpr.asTerm.pos
-                  )
+              argType.asType match {
+                case '[t] =>
+                  Expr.summon[Stringable[t]] match {
+                    case Some(_) => // OK
+                    case None    =>
+                      report.errorAndAbort(
+                        s"Cannot interpolate type ${argType.show} in string literal. " +
+                          s"Only stringable types (primitives, BigInt, BigDecimal, java.time types, UUID, Currency) are allowed. " +
+                          s"Provide an implicit Stringable[${argType.show}] instance.",
+                        argExpr.asTerm.pos
+                      )
+                  }
               }
 
             case InterpolationContext.Key =>
               // Key position - require Stringable
-              Expr.summon(using argType.asType.asInstanceOf[Type[Any]]) match {
-                case Some(_: Expr[Stringable[?]]) => // OK
-                case None                         =>
-                  report.errorAndAbort(
-                    s"Cannot use type ${argType.show} in key position. " +
-                      s"Only stringable types (primitives, BigInt, BigDecimal, java.time types, UUID, Currency) are allowed. " +
-                      s"Provide an implicit Stringable[${argType.show}] instance.",
-                    argExpr.asTerm.pos
-                  )
+              argType.asType match {
+                case '[t] =>
+                  Expr.summon[Stringable[t]] match {
+                    case Some(_) => // OK
+                    case None    =>
+                      report.errorAndAbort(
+                        s"Cannot use type ${argType.show} in key position. " +
+                          s"Only stringable types (primitives, BigInt, BigDecimal, java.time types, UUID, Currency) are allowed. " +
+                          s"Provide an implicit Stringable[${argType.show}] instance.",
+                        argExpr.asTerm.pos
+                      )
+                  }
               }
 
             case InterpolationContext.Value =>
               // Value position - require JsonEncoder
-              Expr.summon(using argType.asType.asInstanceOf[Type[Any]]) match {
-                case Some(_: Expr[JsonEncoder[?]]) => // OK
-                case None                          =>
-                  report.errorAndAbort(
-                    s"No JsonEncoder available for type ${argType.show}. " +
-                      s"Provide an implicit JsonEncoder[${argType.show}] or Schema[${argType.show}] instance.",
-                    argExpr.asTerm.pos
-                  )
+              argType.asType match {
+                case '[t] =>
+                  Expr.summon[JsonEncoder[t]] match {
+                    case Some(_) => // OK
+                    case None    =>
+                      report.errorAndAbort(
+                        s"No JsonEncoder available for type ${argType.show}. " +
+                          s"Provide an implicit JsonEncoder[${argType.show}] or Schema[${argType.show}] instance.",
+                        argExpr.asTerm.pos
+                      )
+                  }
               }
           }
         }

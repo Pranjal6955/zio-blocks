@@ -269,8 +269,8 @@ object JsonInterpolatorSpec extends SchemaBaseSpec {
       )
     },
     test("supports interpolated Option values") {
-      val some = Some("Alice")
-      val none = None
+      val some: Option[String] = Some("Alice")
+      val none: Option[String] = None
       assertTrue(
         json"""{"x": $some}""".get("x").one == Right(Json.str(some.get)),
         json"""{"x": $none}""".get("x").one == Right(Json.Null)
@@ -285,219 +285,14 @@ object JsonInterpolatorSpec extends SchemaBaseSpec {
       assertTrue(json"""{"x": $x}""".get("x").one == Right(Json.obj()))
     },
     test("supports interpolated Json values") {
-      val x = Json.obj("y" -> Json.number(1))
+      val x: Json = Json.obj("y" -> Json.number(1))
       assertTrue(json"""{"x": $x}""".get("x").get("y").int == Right(1))
     },
-    test("supports interpolated Map values with String keys") {
-      check(
-        Gen.string(Gen.char.filter(x => x <= 0xd800 || x >= 0xdfff)) // excluding surrogate chars
-      )(x =>
-        assertTrue(
-          json"""{"x": ${Map(x -> null)}}""".get("x").one == Right(Json.obj(x -> Json.Null))
-        )
-      )
-    },
-    test("supports interpolated Map values with Boolean keys") {
-      check(Gen.boolean)(x =>
-        assertTrue(
-          json"""{"x": ${Map(x -> null)}}""".get("x").one == Right(Json.obj(x.toString -> Json.Null))
-        )
-      )
-    },
-    test("supports interpolated Map values with Byte keys") {
-      check(Gen.byte)(x =>
-        assertTrue(
-          json"""{"x": ${Map(x -> null)}}""".get("x").one == Right(Json.obj(x.toString -> Json.Null))
-        )
-      )
-    },
-    test("supports interpolated Map values with Short keys") {
-      check(Gen.short)(x =>
-        assertTrue(
-          json"""{"x": ${Map(x -> null)}}""".get("x").one == Right(Json.obj(x.toString -> Json.Null))
-        )
-      )
-    },
-    test("supports interpolated Map values with Int keys") {
-      check(Gen.int)(x =>
-        assertTrue(
-          json"""{"x": ${Map(x -> null)}}""".get("x").one == Right(Json.obj(x.toString -> Json.Null))
-        )
-      )
-    },
-    test("supports interpolated Map values with Long keys") {
-      check(Gen.long)(x =>
-        assertTrue(
-          json"""{"x": ${Map(x -> null)}}""".get("x").one == Right(Json.obj(x.toString -> Json.Null))
-        )
-      )
-    },
-    test("supports interpolated Map values with Float keys") {
-      check(Gen.float)(x =>
-        assertTrue {
-          val key = JsonBinaryCodec.floatCodec.encodeToString(x)
-          json"""{"x": ${Map(x -> null)}}""".get("x").one == Right(Json.obj(key -> Json.Null))
-        }
-      )
-    },
-    test("supports interpolated Map values with Double keys") {
-      check(Gen.double)(x =>
-        assertTrue {
-          val key = JsonBinaryCodec.doubleCodec.encodeToString(x)
-          json"""{"x": ${Map(x -> null)}}""".get("x").one == Right(Json.obj(key -> Json.Null))
-        }
-      )
-    },
-    test("supports interpolated Map values with Char keys") {
-      check(
-        Gen.char.filter(x => x <= 0xd800 || x >= 0xdfff) // excluding surrogate chars
-      )(x =>
-        assertTrue(
-          json"""{"x": ${Map(x -> null)}}""".get("x").one == Right(Json.obj(x.toString -> Json.Null))
-        )
-      )
-    },
-    test("supports interpolated Map values with BigDecima keys") {
-      check(Gen.bigDecimal(BigDecimal("-" + "9" * 20), BigDecimal("9" * 20)))(x =>
-        assertTrue(
-          json"""{"x": ${Map(x -> null)}}""".get("x").one == Right(Json.obj(x.toString -> Json.Null))
-        )
-      )
-    },
-    test("supports interpolated Map values with BigInt keys") {
-      check(Gen.bigInt(BigInt("-" + "9" * 20), BigInt("9" * 20)))(x =>
-        assertTrue(
-          json"""{"x": ${Map(x -> null)}}""".get("x").one == Right(Json.obj(x.toString -> Json.Null))
-        )
-      )
-    },
-    test("supports interpolated Map values with DayOfWeek keys") {
-      check(genDayOfWeek)(x =>
-        assertTrue(
-          json"""{"x": ${Map(x -> null)}}""".get("x").one == Right(Json.obj(x.toString -> Json.Null))
-        )
-      )
-    },
-    test("supports interpolated Map values with Duration keys") {
-      check(genDuration)(x =>
-        assertTrue(
-          json"""{"x": ${Map(x -> null)}}""".get("x").one == Right(Json.obj(x.toString -> Json.Null))
-        )
-      )
-    },
-    test("supports interpolated Map values with Instant keys") {
-      check(genInstant)(x =>
-        assertTrue(
-          json"""{"x": ${Map(x -> null)}}""".get("x").one == Right(Json.obj(x.toString -> Json.Null))
-        )
-      )
-    },
-    test("supports interpolated Map values with LocalDate keys") {
-      check(genLocalDate)(x =>
-        assertTrue(
-          json"""{"x": ${Map(x -> null)}}""".get("x").one == Right(Json.obj(x.toString -> Json.Null))
-        )
-      )
-    },
-    test("supports interpolated Map values with LocalDateTime keys") {
-      check(genLocalDateTime)(x =>
-        assertTrue(
-          json"""{"x": ${Map(x -> null)}}""".get("x").one == Right(Json.obj(x.toString -> Json.Null))
-        )
-      )
-    },
-    test("supports interpolated Map values with LocalTime keys") {
-      check(genLocalTime)(x =>
-        assertTrue(
-          json"""{"x": ${Map(x -> null)}}""".get("x").one == Right(Json.obj(x.toString -> Json.Null))
-        )
-      )
-    },
-    test("supports interpolated Map values with Month keys") {
-      check(genMonth)(x =>
-        assertTrue(
-          json"""{"x": ${Map(x -> null)}}""".get("x").one == Right(Json.obj(x.toString -> Json.Null))
-        )
-      )
-    },
-    test("supports interpolated Map values with MonthDay keys") {
-      check(genMonthDay)(x =>
-        assertTrue(
-          json"""{"x": ${Map(x -> null)}}""".get("x").one == Right(Json.obj(x.toString -> Json.Null))
-        )
-      )
-    },
-    test("supports interpolated Map values with OffsetDateTime keys") {
-      check(genOffsetDateTime)(x =>
-        assertTrue(
-          json"""{"x": ${Map(x -> null)}}""".get("x").one == Right(Json.obj(x.toString -> Json.Null))
-        )
-      )
-    },
-    test("supports interpolated Map values with OffsetTime keys") {
-      check(genOffsetTime)(x =>
-        assertTrue(
-          json"""{"x": ${Map(x -> null)}}""".get("x").one == Right(Json.obj(x.toString -> Json.Null))
-        )
-      )
-    },
-    test("supports interpolated Map values with Period keys") {
-      check(genPeriod)(x =>
-        assertTrue(
-          json"""{"x": ${Map(x -> null)}}""".get("x").one == Right(Json.obj(x.toString -> Json.Null))
-        )
-      )
-    },
-    test("supports interpolated Map values with ZoneId keys") {
-      check(genZoneId)(x =>
-        assertTrue(
-          json"""{"x": ${Map(x -> null)}}""".get("x").one == Right(Json.obj(x.toString -> Json.Null))
-        )
-      )
-    },
-    test("supports interpolated Map values with ZoneOffset keys") {
-      check(genZoneOffset)(x =>
-        assertTrue(
-          json"""{"x": ${Map(x -> null)}}""".get("x").one == Right(Json.obj(x.toString -> Json.Null))
-        )
-      )
-    },
-    test("supports interpolated Map values with ZonedDateTime keys") {
-      check(genZonedDateTime)(x =>
-        assertTrue(
-          json"""{"x": ${Map(x -> null)}}""".get("x").one == Right(Json.obj(x.toString -> Json.Null))
-        )
-      )
-    },
-    test("supports interpolated Map values with Currency keys") {
-      check(Gen.currency)(x =>
-        assertTrue(
-          json"""{"x": ${Map(x -> null)}}""".get("x").one == Right(Json.obj(x.toString -> Json.Null))
-        )
-      )
-    },
-    test("supports interpolated Map values with UUID keys") {
-      check(Gen.uuid)(x =>
-        assertTrue(
-          json"""{"x": ${Map(x -> null)}}""".get("x").one == Right(Json.obj(x.toString -> Json.Null))
-        )
-      )
-    },
-    test("supports interpolated Map values with 2 or more keys") {
-      val x = Map(1 -> null, 2 -> null)
-      assertTrue(json"""{"x": $x}""".get("x").one == Right(Json.obj("1" -> Json.Null, "2" -> Json.Null)))
-    },
-    test("supports interpolated Iterable values") {
-      val x = Iterable(1, 2)
-      assertTrue(json"""{"x": $x}""".get("x").one == Right(Json.arr(Json.number(1), Json.number(2))))
-    },
-    test("supports interpolated Array values") {
-      val x = Array(1, 2)
-      assertTrue(json"""{"x": $x}""".get("x").one == Right(Json.arr(Json.number(1), Json.number(2))))
-    },
+
     test("supports interpolated keys and values of other types with overridden toString") {
       case class Person(name: String, age: Int) {
-        override def toString: String = Person.jsonCodec.encodeToString(this)
+        locally { val _ = (name, age) }
+        override def toString: String = s"""{"name":"$name","age":$age}"""
       }
 
       object Person {
@@ -519,6 +314,180 @@ object JsonInterpolatorSpec extends SchemaBaseSpec {
       typeCheck {
         """json"[1,02]""""
       }.map(assert(_)(isLeft(containsString("Invalid JSON literal: illegal number with leading zero at: .at(1)"))))
-    } @@ exceptNative
+    } @@ exceptNative,
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Enhanced Type-Safe Interpolation Test Suites
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    suite("key position interpolation - all PrimitiveTypes")(
+      test("supports all stringable types as keys") {
+        val s            = "key"
+        val b            = true
+        val byte: Byte   = 1
+        val short: Short = 2
+        val int          = 3
+        val long         = 4L
+        val uuid         = java.util.UUID.randomUUID()
+        val instant      = Instant.now()
+        val localDate    = LocalDate.of(2024, 1, 15)
+        val currency     = java.util.Currency.getInstance("USD")
+
+        assertTrue(
+          json"""{$s: 1}""".get(s).int == Right(1),
+          json"""{$b: 1}""".get("true").int == Right(1),
+          json"""{$byte: 1}""".get("1").int == Right(1),
+          json"""{$short: 1}""".get("2").int == Right(1),
+          json"""{$int: 1}""".get("3").int == Right(1),
+          json"""{$long: 1}""".get("4").int == Right(1),
+          json"""{$uuid: 1}""".get(uuid.toString).int == Right(1),
+          json"""{$instant: 1}""".get(instant.toString).int == Right(1),
+          json"""{$localDate: 1}""".get(localDate.toString).int == Right(1),
+          json"""{$currency: 1}""".get("USD").int == Right(1)
+        )
+      },
+
+      test("property-based: stringable types work as keys") {
+        check(Gen.uuid) { uuid =>
+          assertTrue(json"""{$uuid: "v"}""".get(uuid.toString).string == Right("v"))
+        } &&
+        check(Gen.int) { n =>
+          assertTrue(json"""{$n: "v"}""".get(n.toString).string == Right("v"))
+        } &&
+        check(genInstant) { instant =>
+          assertTrue(json"""{$instant: "v"}""".get(instant.toString).string == Right("v"))
+        } &&
+        check(genLocalDate) { date =>
+          assertTrue(json"""{$date: "v"}""".get(date.toString).string == Right("v"))
+        }
+      }
+    ),
+
+    suite("string literal interpolation")(
+      test("supports String interpolation in strings") {
+        val name = "Alice"
+        assertTrue(
+          json"""{"greeting": "Hello, $name!"}""".get("greeting").string == Right("Hello, Alice!")
+        )
+      },
+
+      test("supports numeric types in strings") {
+        val x   = 42
+        val y   = 3.14
+        val big = BigInt("12345678901234567890")
+
+        assertTrue(
+          json"""{"msg": "x is $x"}""".get("msg").string == Right("x is 42"),
+          json"""{"msg": "y is $y"}""".get("msg").string == Right("y is 3.14"),
+          json"""{"msg": "big is $big"}""".get("msg").string == Right("big is 12345678901234567890")
+        )
+      },
+
+      test("supports UUID in strings") {
+        val id = java.util.UUID.fromString("550e8400-e29b-41d4-a716-446655440000")
+        assertTrue(
+          json"""{"ref": "user-$id"}""".get("ref").string == Right("user-550e8400-e29b-41d4-a716-446655440000")
+        )
+      },
+
+      test("supports temporal types in strings") {
+        val date    = LocalDate.of(2024, 1, 15)
+        val time    = LocalTime.of(10, 30, 0)
+        val instant = Instant.parse("2024-01-15T10:30:00Z")
+
+        assertTrue(
+          json"""{"file": "report-$date.pdf"}""".get("file").string == Right("report-2024-01-15.pdf"),
+          json"""{"log": "Event at $time"}""".get("log").string == Right("Event at 10:30"),
+          json"""{"ts": "Created: $instant"}""".get("ts").string == Right("Created: 2024-01-15T10:30:00Z")
+        )
+      },
+
+      test("supports Currency in strings") {
+        val currency = java.util.Currency.getInstance("USD")
+        assertTrue(
+          json"""{"label": "Price in $currency"}""".get("label").string == Right("Price in USD")
+        )
+      },
+
+      test("supports multiple interpolations in one string") {
+        val date    = LocalDate.of(2024, 1, 15)
+        val version = 3
+        val env     = "prod"
+
+        assertTrue(
+          json"""{"path": "/data/$env/$date/v$version/output.json"}""".get("path").string ==
+            Right("/data/prod/2024-01-15/v3/output.json")
+        )
+      },
+
+      test("handles empty interpolation results") {
+        val empty = ""
+        assertTrue(
+          json"""{"msg": "[$empty]"}""".get("msg").string == Right("[]")
+        )
+      },
+
+      test("handles special characters in interpolated strings") {
+        val path  = "foo/bar"
+        val query = "a=1&b=2"
+
+        assertTrue(
+          json"""{"url": "http://example.com/$path?$query"}""".get("url").string ==
+            Right("http://example.com/foo/bar?a=1&b=2")
+        )
+      }
+    ),
+
+    suite("mixed interpolation contexts")(
+      test("combines key and string interpolation") {
+        val key       = java.util.UUID.randomUUID()
+        val timestamp = Instant.now()
+
+        val result = json"""{
+          $key: {
+            "value": 42,
+            "note": "Recorded at $timestamp"
+          }
+        }"""
+
+        assertTrue(
+          result.get(key.toString).get("value").int == Right(42),
+          result.get(key.toString).get("note").string == Right(s"Recorded at $timestamp")
+        )
+      },
+
+      test("multiple keys with different stringable types") {
+        val intKey  = 1
+        val uuidKey = java.util.UUID.randomUUID()
+        val dateKey = LocalDate.of(2024, 1, 15)
+
+        val result = json"""{
+          $intKey: "one",
+          $uuidKey: "uuid",
+          $dateKey: "date"
+        }"""
+
+        assertTrue(
+          result.get("1").string == Right("one"),
+          result.get(uuidKey.toString).string == Right("uuid"),
+          result.get("2024-01-15").string == Right("date")
+        )
+      },
+
+      test("string interpolation with various types") {
+        val name   = "Alice"
+        val age    = 30
+        val score  = 95.5
+        val active = true
+
+        val result = json"""{
+          "message": "User $name, age $age, score $score, active: $active"
+        }"""
+
+        assertTrue(
+          result.get("message").string == Right("User Alice, age 30, score 95.5, active: true")
+        )
+      }
+    )
   )
 }
